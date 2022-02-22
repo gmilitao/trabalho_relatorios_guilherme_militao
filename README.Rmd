@@ -1,0 +1,55 @@
+---
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Curso de Verão IME-USP 2022 - Relatórios reprodutíveis em R
+<br>
+**Lista de documentos que fazem parte do trabalho final do curso Relatórios Reprodutíveis em R.**
+<br>
+
+#### Scripts R
+
+```{r scripts}
+
+tibble::tibble(
+  arquivo = list.files("R/", pattern = ".R"),
+url = paste0("https://github.com/gmilitao/trabalho_relatorios_guilherme_militao/blob/master/R/", arquivo)
+) |> 
+  knitr::kable()
+
+
+```
+
+
+#### Arquivos .rmd
+
+```{r arquivos rmd}
+
+tibble::tibble(
+  arquivo = list.files("relatorio/", pattern = ".Rmd"),
+url = paste0("https://github.com/gmilitao/trabalho_relatorios_guilherme_militao/blob/master/relatorio/", arquivo)
+) |> 
+  knitr::kable()
+
+```
+
+
+
+#### Relatórios em html
+
+```{r relatorios html}
+
+tibble::tibble(
+  arquivo = list.files("relatorio/", pattern = ".html"),
+url = paste0("https://gmilitao.github.io/trabalho_relatorios_guilherme_militao/relatorio/", arquivo)
+) |> 
+  knitr::kable()
+```
+
+
+
+

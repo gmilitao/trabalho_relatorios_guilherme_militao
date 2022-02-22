@@ -1,0 +1,66 @@
+---
+title: "Repositório do trabalho final do curso de Relatórios Reprodutíveis com R"
+author: "Guilherme J. S. Militão"
+date: "21/02/2022"
+output:
+  rmdformats::robobook:
+    self_contained: true
+    default_style: "light"
+    downcute_theme: "default"
+---
+<style>
+body {
+text-align: justify}
+</style>
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+<br>
+**Estão listados aqui os documentos que fazem parte do trabalho final do curso Relatórios Reprodutíveis em R, que fez parte dos cursos de verão de 2022 do IME-USP.**
+<br>
+
+#### Scripts R
+
+```{r scripts}
+
+tibble::tibble(
+  arquivo = list.files("R/", pattern = ".R"),
+url = paste0("https://github.com/gmilitao/trabalho_relatorios_guilherme_militao/blob/master/R/", arquivo)
+) |> 
+  knitr::kable()
+
+
+```
+
+
+#### Arquivos .rmd
+
+```{r arquivos rmd}
+
+tibble::tibble(
+  arquivo = list.files("relatorio/", pattern = ".Rmd"),
+url = paste0("https://github.com/gmilitao/trabalho_relatorios_guilherme_militao/blob/master/relatorio/", arquivo)
+) |> 
+  knitr::kable()
+
+```
+
+
+
+#### Relatórios em html
+
+```{r relatorios html}
+
+tibble::tibble(
+  arquivo = list.files("relatorio/", pattern = ".html"),
+url = paste0("https://gmilitao.github.io/trabalho_relatorios_guilherme_militao/relatorio/", arquivo)
+) |> 
+  knitr::kable()
+
+```
+
+
+
+
