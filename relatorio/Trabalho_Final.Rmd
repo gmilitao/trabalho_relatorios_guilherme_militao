@@ -1,5 +1,6 @@
 ---
-title: "Trabalho final"
+title: "Acidentes fatais envolvendo ciclistas no município de São Paulo"
+author: "Guilherme J. S. Militão"
 date: "23-02-2022"
 output:
   rmdformats::downcute:
@@ -8,6 +9,8 @@ output:
     downcute_theme: "default"
 params:
   qtdeAnos: 1
+  diaRef: "11/03/2020"
+  municipio: "SAO PAULO"
 ---
 <style>
 body {
@@ -19,18 +22,26 @@ text-align: justify}
 library(tidyverse)
 library(data.table)
 
+
+
 obitos <- read.csv2("../dados/obitos_publico.csv")
 
 a_fatais <- readxl::read_excel("../dados/acidentes_fatais.xlsx")
 data.table::setDT(obitos)
 data.table::setDT(a_fatais)
+
+dia <- lubridate::dmy(params$diaRef)
+
 ```
+
+## Justificativa
+
+O presente relatório é o trabalho final do curso de Relatórios Reprodutíveis com R, do IME-USP, em 2022.
 
 ## Objetivos
 
-O objetvo do relatório será comparar os dados sobre acidentes fatais envolvendo ciclistas e pedestres no município de São Paulo/BR entre os períodos de `r params$qtdeAnos` `r ifelse(params$qtdeAnos>1, 'anos','ano')` antes e depois do início da pandemia de  COVID-19. A partir da comparação dos dados, espera-se ser possível observar possíveis mudanças no padrão de ocorrência de acidentes do tipo no município.
+O objetvo do relatório é comparar os dados sobre acidentes fatais envolvendo ciclistas no município de São Paulo/BR entre os períodos de `r params$qtdeAnos` `r ifelse(params$qtdeAnos>1, 'anos','ano')` antes e depois de uma data determinada como parâmetro. Como exemplo, foi considerada a data de início da pandemia de  COVID-19.
 
-O relatório não pretende apresentar ou identificar as causas das mudanças observadas.
 
 ```{r imagem, echo=FALSE, out.width = "70%", fig.align = 'center'}
 
@@ -41,13 +52,13 @@ knitr::include_graphics("https://upload.wikimedia.org/wikipedia/commons/f/f8/Cic
 
 ## Fontes 
 
-Para efeito de comparação, a data considerada como início da pandemia de COVID-19 é 11/03/2020, data em que a Organização Mundial da Saúde caracterizou a doença como uma pandemia^[Mais informações em  https://www.paho.org/pt/covid19/historico-da-pandemia-covid-19].
+A data considerada como início da pandemia de COVID-19 é 11/03/2020, seguindo o que foi estabelecido pela Organização Mundial da Saúde^[Mais informações em  https://www.paho.org/pt/covid19/historico-da-pandemia-covid-19]. A data de referência pode ser alterada a depender do objetivo da análise.
 
 
-As bases de dados utilizadas na análise são provenientes do Governo do Estado de São Paulo, através do portal http://www.respeitoavida.sp.gov.br/relatorios/. 
+As bases de dados utilizadas na análise são provenientes do Governo do Estado de São Paulo e estão disponíveis no portal http://www.respeitoavida.sp.gov.br/relatorios/. 
 
 
-Os dados para donwload estã disponíveis aqui:
+Os links para donwload estão disponíveis aqui:
 
 - [Óbitos](http://painelderesultados.infosiga.sp.gov.br/bases/obitos_publico.csv)
 
@@ -102,42 +113,185 @@ a_fatais2 <- dplyr::left_join(a_fatais,
                                      "Id Delegacia (RDO)",
                                      "Número BO (RDO)"))
 
-# criando variáveIS de identificação de acidentes com óbitos de PEDESTRES, CICLISTAS
-# e PEDESTRES OU CICLISTAS
+# criando variáveIS de identificação de acidentes com óbitos de CICLISTAS
+
 
 a_fatais2 <- a_fatais2 |> 
   mutate(N_vit_ciclistas = rowSums(across(vitima_1:ncol(a_fatais))== "BICICLETA",
-                                 na.rm = TRUE),
-         N_vit_pedestres = rowSums(across(vitima_1:ncol(a_fatais))== "PEDESTRE",
-                                 na.rm = TRUE),
-         N_vit_cicl_ou_pedestre = rowSums(across(vitima_1:ncol(a_fatais)) == "PEDESTRE" |
-                                          across(vitima_1:ncol(a_fatais)) == "BICICLETA",
                                  na.rm = TRUE)) |>
-  mutate(vit_ciclistas = ifelse(N_vit_ciclistas > 0, "Sim", "Não"),
-         vit_pedestres = ifelse(N_vit_pedestres > 0, "Sim", "Não"),
-         vit_cicl_ou_pedestre = ifelse(N_vit_cicl_ou_pedestre > 0, "Sim", "Não"))
+  mutate(vit_ciclistas = ifelse(N_vit_ciclistas > 0, "Sim", "Não"))
+
+# identificação acidentes antes ou depois da data de referência na base de acidentes fatais
+
+a_fatais2 <- a_fatais2 |> 
+  mutate(data_referencia = ifelse(`Data do Acidente` < dia - params$qtdeAnos*365.25 | 
+                                    `Data do Acidente` > dia + params$qtdeAnos*365.25,
+                                         "fora do escopo",
+                                  ifelse(`Data do Acidente` > dia - params$qtdeAnos*365.25 & `Data do Acidente` <= dia,
+                                         "Antes",
+                                         "Depois")))
 
 
+# identificação acidentes antes ou depois da data de referência na base de obitos
+
+obitos <- obitos |> 
+  mutate(data_referencia = ifelse(Data.do.Acidente < dia - params$qtdeAnos*365.25 |
+                                    Data.do.Acidente > dia + params$qtdeAnos*365.25 ,
+                                         "fora do escopo",
+                                  ifelse(Data.do.Acidente > dia - params$qtdeAnos*365.25
+                                         & Data.do.Acidente <= dia,
+                                         "Antes",
+                                         "Depois")
+                                  )
+         )
+
+
+# criando variáveIS de identificação de ano- mês do acidente na base obitos
+
+obitos <- obitos |>
+  mutate(Ano.mes.acidente = substring(Data.do.Acidente, 1, 7))
 
 
 ```
 
 
 
-## Evolução dos números
+## Resumo dos números
 
-### Acidentes com óbitos de pedestres ou ciclistas  {.tabset .tabset-fade}
+```{r resumos, include=FALSE}
 
-#### Números absolutos
+# criação dos resumos
 
-#### Proporção sobre o total de acidentes fatais
+# número total de acidentes fatais de ciclistas antes da referência
+
+n_ac_antes <- a_fatais2 |> 
+  filter(vit_ciclistas == "Sim" & 
+           data_referencia == "Antes" & 
+           Município == params$municipio) |>
+  nrow()
+
+# media por mês antes da referência
+
+med_ac_antes <- a_fatais2 |> 
+  filter(vit_ciclistas == "Sim" & 
+           data_referencia == "Antes" & 
+           Município == params$municipio) |>
+  select(`Ano/Mês do Acidente`) |>
+  group_by(`Ano/Mês do Acidente`) |>
+  count() |>
+  ungroup()
+
+med_ac_antes <- round(mean(med_ac_antes$n),1)
 
 
-### Óbitos de pedestres ou ciclistas  {.tabset .tabset-fade}
+# número total de acidentes fatais de ciclistas depois da referência
 
-#### Números absolutos
+n_ac_depois <- a_fatais2 |> 
+  filter(vit_ciclistas == "Sim" &
+           data_referencia == "Depois" & 
+           Município == params$municipio) |>
+  nrow()
 
-#### Proporção sobre o total de óbitos em acidentes de trânsito
+# media por mês depois da referência
+
+med_ac_depois <- a_fatais2 |> 
+  filter(vit_ciclistas == "Sim" 
+         & data_referencia == "Depois" 
+         & Município == params$municipio) |>
+  select(`Ano/Mês do Acidente`) |>
+  group_by(`Ano/Mês do Acidente`) |>
+  count() |>
+  ungroup()
+
+med_ac_depois <- round(mean(med_ac_depois$n),1)
+
+# diferença em percentual entre os dois períodos
+
+dif_perc <- round(abs((n_ac_depois-n_ac_antes)/n_ac_antes)*100,1)
+
+# texto dinâmico
+
+txt_din <- ifelse(n_ac_depois-n_ac_antes > 0, "um aumento", "uma redução")
+
+```
+
+
+
+No período de `r params$qtdeAnos` `r ifelse(params$qtdeAnos>1, 'anos','ano')` antes de `r params$diaRef`, ocorreram `r n_ac_antes` acidentes com mortes de ciclistas, com uma média de `r med_ac_antes` acidentes por mês. 
+
+Já no período de `r params$qtdeAnos` `r ifelse(params$qtdeAnos>1, 'anos','ano')` depois de `r params$diaRef`, ocorreram `r n_ac_depois` acidentes com mortes de ciclistas, com uma média de `r med_ac_depois` acidentes por mês, `r txt_din` de `r dif_perc`% em relação ao período anterior.
+
+
+
+## Gráficos 
+
+### Número de acidentes com óbitos de ciclistas - `r params$qtdeAnos` `r ifelse(params$qtdeAnos>1, 'anos','ano')` antes e depois de `r params$diaRef` (data de referência)
+
+
+```{r grafico acidentes, echo=FALSE}
+
+a_fatais2 |>
+  filter(vit_ciclistas == "Sim" &
+           data_referencia != "fora do escopo"&
+           Município == params$municipio) |>
+  select(`Ano/Mês do Acidente`, data_referencia) |>
+  group_by(`Ano/Mês do Acidente`, data_referencia) |>
+  count() |>
+  ungroup() |>
+  mutate(`Ano/Mês do Acidente` = lubridate::ym(`Ano/Mês do Acidente`)) |>
+  ggplot(aes(`Ano/Mês do Acidente`, n)) +
+  geom_col(aes(fill = data_referencia))+
+  geom_text(aes(label = n),
+             position = position_dodge(0.9),
+             vjust = 0) +
+  scale_x_date(date_labels = "%m/%y", 
+               date_breaks = "2 months") +
+  labs(x = "Meses", y = "Número de acidentes") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, 
+                                   vjust = 0.5),
+        legend.position="none") +
+  facet_grid(cols = vars(data_referencia),
+             scales = "free", 
+             labeller = as_labeller(c("Antes" = "Antes da referência",
+                                      "Depois" = "Depois da referência")))
+
+
+```
+
+### Óbitos de ciclistas - `r params$qtdeAnos` `r ifelse(params$qtdeAnos>1, 'anos','ano')` antes e depois de `r params$diaRef` (data de referência) 
+
+
+```{r grafico obitos, echo=FALSE}
+
+obitos |>
+  filter(Tipo.do.veículo.da.vítima == "BICICLETA" &
+           data_referencia != "fora do escopo"&
+           Município == params$municipio) |>
+  select(Ano.mes.acidente, data_referencia)  |>
+  group_by(Ano.mes.acidente, data_referencia) |>
+  count() |>
+  ungroup() |>
+  mutate(Ano.mes.acidente = lubridate::ym(Ano.mes.acidente)) |>
+  ggplot(aes(Ano.mes.acidente, n)) +
+  geom_col(aes(fill = data_referencia))+
+  geom_text(aes(label = n),
+             position = position_dodge(0.9),
+             vjust = 0) +
+  scale_x_date(date_labels = "%m/%y", 
+               date_breaks = "2 months") +
+  labs(x = "Meses", y = "Número de acidentes") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, 
+                                   vjust = 0.5),
+        legend.position="none") +
+  facet_grid(cols = vars(data_referencia),
+             scales = "free", 
+             labeller = as_labeller(c("Antes" = "Antes da referência",
+                                      "Depois" = "Depois da referência")))
+ 
+```
+
 
 
 
