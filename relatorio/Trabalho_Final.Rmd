@@ -45,7 +45,7 @@ O objetvo do relatório é comparar os dados sobre acidentes fatais envolvendo c
 
 ```{r imagem, echo=FALSE, out.width = "70%", fig.align = 'center'}
 
-knitr::include_graphics("https://upload.wikimedia.org/wikipedia/commons/f/f8/Ciclovia_da_Av._Paulista_02.jpg")
+knitr::include_graphics("../img/ciclista.jpg")
 
 ```
 
@@ -221,6 +221,20 @@ No período de `r params$qtdeAnos` `r ifelse(params$qtdeAnos>1, 'anos','ano')` a
 
 Já no período de `r params$qtdeAnos` `r ifelse(params$qtdeAnos>1, 'anos','ano')` depois de `r params$diaRef`, ocorreram `r n_ac_depois` acidentes com mortes de ciclistas, com uma média de `r med_ac_depois` acidentes por mês, `r txt_din` de `r dif_perc`% em relação ao período anterior.
 
+```{r tabela, echo=FALSE}
+
+quantidade <- a_fatais2 |>
+  filter(vit_ciclistas == "Sim" &
+           data_referencia != "fora do escopo"&
+           Município == params$municipio) |>
+  select(data_referencia) |>
+  group_by(data_referencia) |>
+  count()
+
+knitr::kable(quantidade, col.names = c("Período em relação à referência", "Quantidade de acidentes"))|>
+  kableExtra::kable_styling(full_width = F)
+
+```
 
 
 ## Gráficos 
