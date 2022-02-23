@@ -45,7 +45,7 @@ O objetvo do relatório é comparar os dados sobre acidentes fatais envolvendo c
 
 ```{r imagem, echo=FALSE, out.width = "70%", fig.align = 'center'}
 
-knitr::include_graphics("../img/ciclista.jpg")
+knitr::include_graphics("../img/Ciclovia_da_Av._Paulista_02.png")
 
 ```
 
