@@ -16,11 +16,14 @@ text-align: justify}
 
 ```{r leitura das bases, include=FALSE}
 
+library(tidyverse)
+library(data.table)
+
 obitos <- read.csv2("../dados/obitos_publico.csv")
 
 a_fatais <- readxl::read_excel("../dados/acidentes_fatais.xlsx")
-
-
+data.table::setDT(obitos)
+data.table::setDT(a_fatais)
 ```
 
 ## Objetivos
@@ -50,6 +53,76 @@ Os dados para donwload estã disponíveis aqui:
 
 - [Acidentes fatais](http://painelderesultados.infosiga.sp.gov.br/bases/acidentes_fatais.xlsx)
 
+```{r tratamento bases, include=FALSE}
+
+# Tratando duplicações na base de óbitos para levar informações de 'tipo de veículo da vítima' para a base de acidentes fatais.
+
+data.table::setorder(obitos, Ano.do.BO..RDO., Id.da.Delegacia..RDO., Número.do.Bo..RDO.)
+
+obitos[, c := 1:.N, by = c("Id.da.Delegacia..RDO.", "Número.do.Bo..RDO.", "Ano.do.BO..RDO.")]
+
+obitos2 <- obitos[, .(Ano.do.BO..RDO.,
+                      Id.da.Delegacia..RDO.,
+                      Número.do.Bo..RDO.,
+                      c,
+                      Tipo.do.veículo.da.vítima)]
+
+setnames(obitos2, 'Tipo.do.veículo.da.vítima', 'veic_vit')
+
+# base de óbitos com acidentes na linha e tipos de veículos das vítimas nas linhas
+obitos2 <- dcast(obitos2,
+                 Ano.do.BO..RDO. + Id.da.Delegacia..RDO. + Número.do.Bo..RDO. ~ c,
+                 value.var = "veic_vit")
+
+# tratamento dos nomes para o join com a a_fatais
+setnames(obitos2, 
+         c("Ano.do.BO..RDO.",
+           "Id.da.Delegacia..RDO.",
+           "Número.do.Bo..RDO.",
+           colnames(obitos2[,4:ncol(obitos2)])),
+         c("Ano BO (RDO)",
+           "Id Delegacia (RDO)",
+           "Número BO (RDO)",
+           paste("vitima", 
+                 colnames(obitos2[,4:ncol(obitos2)]),
+                                         sep = "_")
+           )
+         )
+
+
+# variáveis de identificação da base obitos2 como character
+
+obitos2[,1:3] <- lapply(obitos2[,1:3], as.character)
+
+# trazendo informações de veículos das vítimas para a base de acidentes
+
+a_fatais2 <- dplyr::left_join(a_fatais, 
+                              obitos2, 
+                              by = c("Ano BO (RDO)",
+                                     "Id Delegacia (RDO)",
+                                     "Número BO (RDO)"))
+
+# criando variáveIS de identificação de acidentes com óbitos de PEDESTRES, CICLISTAS
+# e PEDESTRES OU CICLISTAS
+
+a_fatais2 <- a_fatais2 |> 
+  mutate(N_vit_ciclistas = rowSums(across(vitima_1:ncol(a_fatais))== "BICICLETA",
+                                 na.rm = TRUE),
+         N_vit_pedestres = rowSums(across(vitima_1:ncol(a_fatais))== "PEDESTRE",
+                                 na.rm = TRUE),
+         N_vit_cicl_ou_pedestre = rowSums(across(vitima_1:ncol(a_fatais)) == "PEDESTRE" |
+                                          across(vitima_1:ncol(a_fatais)) == "BICICLETA",
+                                 na.rm = TRUE)) |>
+  mutate(vit_ciclistas = ifelse(N_vit_ciclistas > 0, "Sim", "Não"),
+         vit_pedestres = ifelse(N_vit_pedestres > 0, "Sim", "Não"),
+         vit_cicl_ou_pedestre = ifelse(N_vit_cicl_ou_pedestre > 0, "Sim", "Não"))
+
+
+
+
+```
+
+
 
 ## Evolução dos números
 
@@ -57,7 +130,7 @@ Os dados para donwload estã disponíveis aqui:
 
 #### Números absolutos
 
-#### Proporção sobre o total de acidentes
+#### Proporção sobre o total de acidentes fatais
 
 
 ### Óbitos de pedestres ou ciclistas  {.tabset .tabset-fade}
